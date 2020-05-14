@@ -1,63 +1,134 @@
 #include <vector>
 #include <iostream>
 #include <algorithm>
+#include <chrono>
+#include <fstream>
 #include "Vertex.h"
 #include "Graph.h"
+using namespace std::chrono;
+
+#define SAMPLES 100
+
+
+
+//	returns the indexes where the character val is
+std::vector<int> find_sub_string(std::string str, char val)
+{
+	std::vector<int> indexes;
+	int length = str.size();
+	int i = 0;
+	for (int i = 0; i < length; i++) {
+		if (str.at(i) == val)
+			indexes.push_back(i);
+	}
+	if (indexes.empty())
+		indexes.push_back(-1);
+	return indexes;
+}
+
 
 int main() {
+		auto start = high_resolution_clock::now();
 	
-	Vertex* p1 = new Vertex("A");
-	Vertex* p2 = new Vertex("B");
-	Vertex* p3 = new Vertex("C");
-	Vertex* p4 = new Vertex("D");
-	Vertex* p5 = new Vertex("E");
-	Vertex* p6 = new Vertex("F");
-	Vertex* p7 = new Vertex("G");
-	Vertex* p8 = new Vertex("H");
-	Vertex* p9 = new Vertex("I");
+	// -------------- Creating the 'routes_only.dat' --------------
+	//std::ifstream read_routes("routes.dat.dat"); //read from the internet file
+	//std::ofstream write_routes_only("routes_only.dat"); //create my own file
+	//std::string input; 
+	//std::string from;
+	//std::string to;
+	//std::vector<int> index;
+	//
+	//int i = 0;
+	//while (!read_routes.eof())
+	//{
+	//	read_routes >> input;
+	//	if (input.size() < 5) {
+	//		continue;
+	//	}
+	//	index = find_sub_string(input, ',');
+	//	input = input.substr(0, index.at(5));
+	//	from = input.substr(index.at(1) + 1, 3);
+	//	to = input.substr(index.at(3) + 1, 3);
+	//	write_routes_only << from << "->" << to << "\n";
+	//	std::cout << i++ << std::endl;
+	//read_routes.close();
+	//write_routes_only.close();
+	//}
+	std::string input;
 
-	//----- Connection -----
-	//[taken from the presentation in Data Structure II]
-	//p1 - A
-	p1->connect(p2);
-	p1->connect(p6);
+	std::cout << "Insert the src airport in ICAO format [4 letters]";
+	std::cin >> input;
 
-	//p2 - B
-	p2->connect(p3);
-	p2->connect(p7);
+	//	Initializing variables in order to create the Graph data structre
+	std::ifstream read_only_routes("routes_only.dat");
+	std::string route;
+	std::string source;
+	std::string destination;
+	Vertex* from = nullptr;
+	Vertex* to = nullptr;
+	int i = 0;
 
-	//p3 - C
-	p3->connect(p8);
+	//	Building the Graph based on the [source -> destination] in the 'route.dat' file
+	Graph airport_routes("Segev - Aircraft Managing System");
+	while (!read_only_routes.eof())
+	{
+		//	The amount of data we giving to the algorithm to work with
+		//	The more information, the more accurate -> LOADS TIME INCREASE!
+		if (i == SAMPLES) //loading data from file
+			break;
 
-	//p4 - D
-	p4->connect(p3);
-	p4->connect(p5);
+		//	Because of the file is coming in some format
+		//	I need to change it to something I can work with
+		//	[Cutting the important data]
+		read_only_routes >> route;
+		source = route.substr(0, 3);
+		destination = route.substr(5, 3);
 
-	//p5 - E
-	//NONE
+		//	Using the searchVertex(Vertex* v) from the Graph
+		//	class, check if we already inserted those vertex
+		//	Yes -> don't push them in our graph
+		//	No  -> Insert!
+		from = airport_routes.searchVertex(source);
+		to = airport_routes.searchVertex(destination);
 
-	//p6 - F
-	p6->connect(p5);
-	p6->connect(p9);
+		if (from == nullptr)
+		{
+			from = new Vertex(source);
+			airport_routes.insertVertex(from);
+		}
+		if (to == nullptr)
+		{
+			to = new Vertex(destination);
+			airport_routes.insertVertex(to);
+		}
 
-	//p7
-	p7->connect(p1);
+		//	Because of the meaning of the file
+		//	I working with, is [source->destination], I've created
+		//	a method in vertex that connects two vertex as src and dst
+		from->connect(to);
+		std::cout << i++ << std::endl;
+	}
 
-	//p8
-	p8->connect(p7);
-	p8->connect(p9);
-
-	//p9
-	p9->connect(p7);
+	Vertex* startPosition = airport_routes.searchVertex(input);
 	
-	Graph* graph = new Graph("training");
-	graph->insertVertex(9, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+	//	 In case user gave incorecct input
+	try {
+		if (startPosition != nullptr)
+			airport_routes.printGraph(Mode::DFS, startPosition);
+		else
+			throw std::runtime_error("-----------------------------------------\nERROR: Could not find airline company[2] \n	    PROGRAM_TERMINATED\n-----------------------------------------\n");
+			//throw "";
 
-	//graph->BFS(p1);
-	graph->destinationsFrom(p3);
+	}
+	catch (const std::exception& e) {
+		std::cout << e.what() << std::endl;
+	}
 
-	std::cout << "DONE";
-
+		// calaulate run time 
+		auto stop = high_resolution_clock::now();
+		std::cout << "Run-Time: " << (duration_cast<milliseconds>(stop - start)).count() << " milliseconds" << std::endl;
+		
+	
 	system("pause");
   	return 0;
 }
