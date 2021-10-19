@@ -1,5 +1,3 @@
-# Algorithm analysis and complexity course
-
 ## Lesson 1 - Greedy Algorithms 
 ### part 1 - Greedy Activity Selector algorithm
 url: https://en.wikipedia.org/wiki/Activity_selection_problem
